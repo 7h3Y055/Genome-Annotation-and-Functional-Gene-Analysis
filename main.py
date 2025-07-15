@@ -66,7 +66,7 @@ def generate_csv(filtered_blast, csv_out):
     print("[+] Generating CSV summary of stress-related proteins...")
     with open(filtered_blast, "r") as infile, open(csv_out, "w", newline="") as outcsv:
         writer = csv.writer(outcsv)
-        writer.writerow(["Gene ID", "Function", "Stress Type"])
+        writer.writerow(["Gene ID", "Function"])
         for line in infile:
             cols = line.strip().split("\t")
             if len(cols) >= 2:
