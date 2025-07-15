@@ -1,10 +1,9 @@
 #!/bin/env python3
 
 from Bio import SeqIO
-import sys, subprocess
-import csv
-import matplotlib.pyplot as plt
 from collections import Counter
+import sys, subprocess, csv
+import matplotlib.pyplot as plt
 
 
 
