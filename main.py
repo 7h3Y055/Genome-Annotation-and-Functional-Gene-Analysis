@@ -24,7 +24,6 @@ def fasta_check(fasta_file):
                     sys.exit(f"\n[!] Error: Invalid base '{base}' found in the FASTA file.")
             if len(record.seq) < 1:
                 sys.exit("\n[!] Error: Sequence length < 1 found in the FASTA file.")
-
             print("Done")
 
     except Exception as e:
@@ -34,14 +33,16 @@ def fasta_check(fasta_file):
 
 def predict_genes(fasta_path, output_gff):
     print("[+] Predicting genes with Augustus...")
-    cmd = f"augustus --species=arabidopsis {fasta_path} > {output_gff}"
+    species_name = "arabidopsis"
+    # species_name = "wheat"
+    cmd = f"augustus --species={species_name} {fasta_path} > {output_gff}"
     subprocess.run(cmd, shell=True, check=True)
     print("[-] Gene prediction completed!")
 
 
-def extract_sequences(fasta_path, gff_path, cds_out, prot_out):
-    print("[+] Extracting CDS and protein sequences...")
-    cmd = f"gffread {gff_path} -g {fasta_path} -x {cds_out} -y {prot_out}"
+def extract_sequences(fasta_path, gff_path, prot_out):
+    print("[+] Extracting protein sequences...")
+    cmd = f"gffread {gff_path} -g {fasta_path} -y {prot_out}"
     subprocess.run(cmd, shell=True, check=True)
     print("[-] Sequence extraction completed!")
 
@@ -175,7 +176,6 @@ if __name__ == "__main__":
     genome_name = sys.argv[1][:sys.argv[1].rfind(".")]
     fasta = sys.argv[1]
     gff3 = genome_name + ".gff3"
-    cds = genome_name + ".cds.fasta"
     protein = genome_name + ".proteins.fasta"
     blast_output = genome_name + "_blast_results.tsv"
     filtered_output = genome_name + "_filtered_stress.tsv"
@@ -186,7 +186,7 @@ if __name__ == "__main__":
 
     fasta_check(fasta)
     predict_genes(fasta, gff3)
-    extract_sequences(fasta, gff3, cds, protein)
+    extract_sequences(fasta, gff3, protein)
     annotate_with_blast(protein, blast_output)
     filter_stress_proteins(blast_output, stress_keywords, filtered_output)
     generate_csv(filtered_output, summary_csv)
