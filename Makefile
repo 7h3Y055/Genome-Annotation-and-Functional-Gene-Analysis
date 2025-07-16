@@ -41,3 +41,6 @@ wheat_model:
 clean:
 	rm -f uniprot_sprot.fasta*
 	rm -rf uniprot_sprot_db tmp_aug_repo
+
+
+# source /opt/anaconda/bin/activate
