@@ -2,7 +2,8 @@
 
 from Bio import SeqIO
 from collections import Counter
-import sys, subprocess, csv
+import sys, subprocess, csv, os
+from concurrent.futures import ThreadPoolExecutor
 import matplotlib.pyplot as plt
 
 
@@ -31,13 +32,40 @@ def fasta_check(fasta_file):
     print("[-] FASTA file check completed successfully!")
 
 
-def predict_genes(fasta_path, output_gff):
+# def predict_genes(fasta_path, output_gff):
+#     print("[+] Predicting genes with Augustus...")
+#     # species_name = "arabidopsis"
+#     species_name = "wheat"
+#     cmd = f"augustus --species={species_name} {fasta_path} > {output_gff}"
+#     subprocess.run(cmd, shell=True, check=True)
+#     print("[-] Gene prediction completed!")
+
+
+def predict_genes(slices_dir, output_file):
+    species="wheat"
+    threads=12
+    os.makedirs("augustus_out", exist_ok=True)
+
     print("[+] Predicting genes with Augustus...")
-    species_name = "arabidopsis"
-    # species_name = "wheat"
-    cmd = f"augustus --species={species_name} {fasta_path} > {output_gff}"
-    subprocess.run(cmd, shell=True, check=True)
+    def run_one(fasta):
+        base = os.path.splitext(fasta)[0]
+        infile = os.path.join(slices_dir, fasta)
+        outfile = os.path.join("augustus_out", f"{base}.gff")
+        with open(outfile, "w") as out:
+            subprocess.run(["augustus", f"--species={species}", infile], stdout=out)
+
+    files = sorted(f for f in os.listdir(slices_dir) if f.endswith(".fasta"))
+    with ThreadPoolExecutor(max_workers=threads) as pool:
+        pool.map(run_one, files)
+
+    with open(output_file, "w") as merged:
+        for f in sorted(os.listdir("augustus_out")):
+            if f.endswith(".gff"):
+                with open(os.path.join("augustus_out", f)) as part:
+                    merged.write(part.read())
+
     print("[-] Gene prediction completed!")
+
 
 
 def extract_sequences(fasta_path, gff_path, prot_out):
@@ -143,7 +171,6 @@ def generate_html(csv_file, genome_name):
                 <th>Gene ID</th>
                 <th>Matched Protein</th>
                 <th>Human Description</th>
-                <th>Stress Type</th>
             </tr>
     """
 
@@ -155,7 +182,6 @@ def generate_html(csv_file, genome_name):
                 <td>{row['Gene ID']}</td>
                 <td>{row['Function']}</td>
                 <td>{desc}</td>
-                <td>{row['Stress Type']}</td>
             </tr>\n"""
 
     html += """    </table>
@@ -185,7 +211,7 @@ if __name__ == "__main__":
     stress_keywords = ["HSP", "DREB", "LEA", "HSF", "SOS", "NHX", "RD29", "AREB"]
 
     fasta_check(fasta)
-    predict_genes(fasta, gff3)
+    predict_genes("Genome_slices", gff3)
     extract_sequences(fasta, gff3, protein)
     annotate_with_blast(protein, blast_output)
     filter_stress_proteins(blast_output, stress_keywords, filtered_output)
